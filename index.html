@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Organize my shopping!</title>
+    <style>
+
+    </style>
+    <script>
+        const category_names = [
+            { code: "BR", name: "brød" },
+            { code: "FG", name: "frugt & grønt" },
+            { code: "KS", name: "konserves" },
+            { code: "KF", name: "kød & fisk" },
+            { code: "TV", name: "tørvarer" },
+            { code: "MP", name: "mælkeprodukter" },
+            { code: "MM", name: "morgenmad" },
+            { code: "BA", name: "bageartikler" },
+            { code: "PL", name: "pålæg" },
+            { code: "KL", name: "kolonial" },
+            { code: "AK", name: "alkohol" },
+            { code: "SK", name: "slik & snacks" },
+            { code: "UN", name: "ukendt" },
+        ];
+
+        let category_ordering = category_names.map(function (item) {
+            return item.code;
+        });
+
+        const categories = {
+            "løg": "FG",
+            "kartoffel": "FG",
+            "flåede tomater": "KS",
+            "aspargessnitter": "KS",
+            "chips": "SK",
+            "popcorn": "SK",
+            "linser": "TV",
+            "kikærter": "TV",
+            "cornflakes": "MM",
+            "havregryn": "MM",
+            "müsli": "MM",
+            "mysli": "MM",
+            "pasta": "TV",
+            "estragon": "FG",
+            "bouillon": "TV",
+            "hvedemel": "BA",
+            "rugmel": "BA",
+            "rugkerner": "BA",
+            "mel": "BA",
+            "mascarpone": "MP",
+            "mælk": "MP",
+            "pålæg": "PL",
+            "smør": "MP",
+            "ricotta": "MP",
+            "yoghurt": "MP",
+            "æg": "MP",
+            "gær": "MP",
+            "citron": "FG",
+            "lime": "FG",
+            "flødeost": "PL",
+            "gulerødder": "FG",
+            "hvidløg": "FG",
+            "hvidvin": "AK",
+            "rødvin": "AK",
+            "kaffe": "KL",
+            "te": "KL",
+            "fløde": "MP",
+            "champignon": "FG",
+            "ris": "TV",
+            "græskar": "FG",
+            "kejserhatte": "FG",
+        };
+
+        function showView(params) {
+            function renderToDOM(shoppingList, targetElement) {
+                for (const item of shoppingList) {
+                    var newNode = document.createElement("li");
+                    newNode.appendChild(document.createTextNode(
+                        item.amount + " " + item.unit + " " + item.name
+                    ));
+                    targetElement.appendChild(newNode);
+                }
+            }
+
+            let shoppingListElement = document.getElementById("shoppingList")
+            let editButton = document.getElementById("editButton");
+
+            editButton.onclick = function () {
+                let currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set("view", "edit");
+                currentUrl.searchParams.set("data", params["data"]);
+                window.location.href = currentUrl;
+            };
+
+            let shoppingList = JSON.parse(atob(params["data"]));
+
+            renderToDOM(shoppingList, shoppingListElement);
+            console.log(shoppingList);
+        }
+
+        function editView(params) {
+            function renderToText(shoppingList) {
+                return shoppingList.map(function (item) {
+                    return item.amount + " " + item.unit + " " + item.name;
+                }).join("\n");
+            }
+
+            function guessCategory(name) {
+                for (const [key, value] of Object.entries(categories)) {
+                    if ((name.indexOf(key) != -1) || (key.indexOf(name) != -1)) {
+                        return value;
+                    }
+                }
+                return "UN";
+            }
+
+            function fixShoppingList(text) {
+                return text.trim().split("\n").map(function (line) {
+                    let match = line.match(/(?<amount>\d+) (?<unit>\S+) (?<name>.+)/);
+                    let name, amount, unit, category;
+                    if (match) {
+                        name = match.groups["name"].toLowerCase();
+                        amount = parseInt(match.groups["amount"])
+                        unit = match.groups["unit"];
+                        category = guessCategory(name);
+                    } else {
+                        name = line.trim().toLowerCase();
+                        amount = 1;
+                        unit = "stk";
+                        category = guessCategory(name);
+                    }
+                    return { "amount": amount, unit: unit, "name": name, "category": category, "checked": false };
+                }).sort(function (a, b) {
+                    let aIndex = category_ordering.indexOf(a.category);
+                    let bIndex = category_ordering.indexOf(b.category);
+                    return aIndex - bIndex;
+                });
+            }
+
+            let rawList = document.getElementById("rawList");
+            let saveButton = document.getElementById("saveButton");
+
+            if ("data" in params) {
+                let shoppingList = JSON.parse(atob(params["data"]));
+                rawList.value = renderToText(shoppingList);
+            }
+
+            saveButton.onclick = function () {
+                let data = btoa(JSON.stringify(fixShoppingList(rawList.value)));
+                let currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set("view", "show");
+                currentUrl.searchParams.set("data", data);
+                window.location.href = currentUrl;
+            };
+        }
+
+        window.onload = function () {
+            let views = {
+                "edit": { "fn": editView, "elm": document.getElementById("editView") },
+                "show": { "fn": showView, "elm": document.getElementById("showView") },
+            };
+
+            let urlSearchParams = new URLSearchParams(window.location.search);
+            let params = Object.fromEntries(urlSearchParams.entries());
+
+            let viewName = params["view"] || "edit";
+            let view = views[viewName];
+            for (const [key, value] of Object.entries(views)) {
+                if (key != viewName) {
+                    value.elm.style.display = "none";
+                } else {
+                    value.elm.style.display = "block";
+                }
+            }
+
+            view.fn(params);
+        };
+    </script>
+</head>
+
+<body>
+    <div id="editView">
+        <h1>Indtast indkøbsliste</h1>
+        <textarea id="rawList"></textarea>
+        <button id="saveButton">Save</button>
+    </div>
+    <div id="showView">
+        <h1>Indkøbsliste</h1>
+        <ul id="shoppingList"></ul>
+        <button id="editButton">Edit</button>
+    </div>
+</body>
+
+</html>
