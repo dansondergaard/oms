@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -130,7 +129,7 @@
                 }
             }
 
-            let shoppingListElement = document.getElementById("shoppingList")
+            let shoppingListElement = document.getElementById("shoppingList");
             let editButton = document.getElementById("editButton");
 
             editButton.onclick = function () {
@@ -141,9 +140,7 @@
             };
 
             let shoppingList = JSON.parse(atob(params["data"]));
-
             renderToDOM(shoppingList, shoppingListElement);
-            console.log(shoppingList);
         }
 
         function editView(params) {
@@ -228,12 +225,12 @@
 
 <body>
     <div id="editView">
-        <h1>Indtast indkøbsliste</h1>
+        <h1>Enter shopping list</h1>
         <textarea id="rawList"></textarea>
         <button id="saveButton">Save</button>
     </div>
     <div id="showView">
-        <h1>Indkøbsliste</h1>
+        <h1>Shopping list</h1>
         <ul id="shoppingList"></ul>
         <button id="editButton">Edit</button>
     </div>
